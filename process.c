@@ -33,7 +33,7 @@ int main() {
     char *filename = "bookInfo1.txt";
     char *column = "Stock";
 
-    struct recordStruct *recordArray = readFile(filename, column, &row, &col);
+    char ***recordArray = readFile(filename, column, &row, &col);
 
     int count = 0;
     // char*** uniqueRecordArray_ = getByUniqueValue(recordArray, column, "Out of stock", row, col, &count);
@@ -43,22 +43,38 @@ int main() {
     // createProcesses(2, uniqueValues, recordArray, column, row, col);
 }
 
-struct recordStruct *readFile(char* filename, char* column, int* row_, int* col_) {
+char ***readFile(char* filename, char* column, int* row_, int* col_) {
 
-    int nRows = 1000;
-    int nCols = 7;
+    int nRows = 705;
+    int nCols = 6;
     int nValues = 300;
 
-    // Each record has a uniqueValue
-    struct recordStruct *recordArray = (struct recordStruct*)malloc(nRows * sizeof(struct recordStruct));
-    for (int i = 0; i < nRows; i++) {
-        recordArray[i].uniqueValue = (char*)malloc(nValues * sizeof(char));
+    if (strcmp(filename, "amazonBestsellers.txt") == 0) {
+        nRows = 555;
+        nCols = 7;
+    }
 
-        recordArray[i].values = (char**)malloc(nCols * sizeof(char*));
+    // Each record has a uniqueValue
+    // struct recordStruct *recordArray = (struct recordStruct*)malloc(nRows * sizeof(struct recordStruct));
+    // for (int i = 0; i < nRows; i++) {
+    //     recordArray[i].uniqueValue = (char*)malloc(nValues * sizeof(char));
+
+    //     recordArray[i].values = (char**)malloc(nCols * sizeof(char*));
+    //     for (int j = 0; j < nCols; j++) {
+    //         recordArray[i].values[j] = (char*)malloc(nValues * sizeof(char));
+    //     }
+    // }
+
+    char*** recordArray = (char***)malloc(nRows * sizeof(char**));
+
+    for (int i = 0; i < nRows; i++) {
+        recordArray[i] = (char**)malloc(nCols * sizeof(char*));
+
         for (int j = 0; j < nCols; j++) {
-            recordArray[i].values[j] = (char*)malloc(nValues * sizeof(char));
+            recordArray[i][j] = (char*)malloc(nValues * sizeof(char));
         }
     }
+
 
     FILE *inFile = fopen(filename, "r");
     if (!inFile) {
@@ -80,9 +96,12 @@ struct recordStruct *readFile(char* filename, char* column, int* row_, int* col_
         while (pt != NULL) {
 
             for (int k = 0; k < strlen(pt); k++) {
-                recordArray[row].values[col][k] = pt[k];
-                printf("recordArray[%d].values[%d][%d] = %c\n", row, col, k, recordArray[row].values[col][k]);
+                recordArray[row][col][k] = pt[k];
+                // printf("recordArray[%d].values[%d][%d] = %c\n", row, col, k, recordArray[row][col][k]);
             }
+
+            // recordArray[row][col] = pt;
+            printf("recordArray[%d].values[%d] = %s\n", row, col, recordArray[row][col]);
 
             // recordArray[row].values[col] = pt;
 
