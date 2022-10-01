@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "__locale": "c",
+        "unique_record_struct.h": "c",
+        "msg.h": "c"
+    }
+}
