@@ -6,35 +6,30 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<string.h>
-#include<unistd.h>
 #include<sys/types.h>
+#include <sys/wait.h>
 #include<sys/ipc.h>
-#include<sys/msg.h>
 #include <sys/stat.h> 	//required for mkfifo (i.e. defines data returned by the stat() function: get file status)
 #include <fcntl.h> 	//required for open (i.e. file control options)
 
 #define MAX_TEXT 512   //maximum length of the message that can be sent allowed
-#define N_PROCESSES 2
-struct my_msg{
-    long int msg_type;
-    char *uniqueValue;
-};
 
 extern struct processDataStruct processData;
 
-// int main() {
+int main() {
 
-//     char *filename = "bookInfo.txt";
-//     char *column = "Stock";
+    char *filename = "amazonBestsellers.txt";
+    char *column = "User rating";
 
 //     char unique[2][15] = {"In stock", "Out of stock"};
+    char unique[11][15] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
 
-//     createProcesses(2, filename, column, unique);
+    createProcesses(11, filename, column, unique);
 
-//     receiveDataFromProcess("Out of stock.txt", column, "Out of stock");
+    // receiveDataFromProcess("Out of stock.txt", column, "Out of stock");
 
-//     return 0;
-// }
+    return 0;
+}
 
 void createProcesses(int nProcess, char *filename, char *column, char uniques[][15]) {
     
@@ -53,6 +48,15 @@ void createProcesses(int nProcess, char *filename, char *column, char uniques[][
         exit(0);
     }
 
+    for (int i = 0; i < nProcess; i++) {
+        struct processDataStruct data;
+        strcpy(data.uniqueValue, uniques[i]);
+        strcpy(data.filename, filename);
+        strcpy(data.column, column);
+        strcpy(data.tdata, uniques[i]);
+        sendViaQueue(msgid, data);
+    }
+
     int count = 0;
     for(int i = 0; i < nProcess; i++) {
         
@@ -64,8 +68,6 @@ void createProcesses(int nProcess, char *filename, char *column, char uniques[][
         }
 
         if (pid > 0 && parent == getpid()) {
-            // printf("Hey, its me here! My child is: %d\n", pid);
-
             // Send using message queue
 
             struct processDataStruct data;
@@ -82,14 +84,10 @@ void createProcesses(int nProcess, char *filename, char *column, char uniques[][
         } else if (pid == 0 && parent == getppid()) { 
             // printf("If block - My pid is %d, and parent pid is %d\n", getpid(), getppid());
 
-            struct processDataStruct data = receiveViaQueue(msgid);
+            struct processDataStruct data = receiveViaQueue(msgid, uniques[count]);
             
-            // Send using pipe
-            
-            struct uniqueRecordStruct uniqueRecord = readFileByUniqueValue(data.filename, data.column, data.uniqueValue);
-            
-            sendDataToParent(data, uniqueRecord);
-            wait(NULL);
+            // Send using pipe            
+            sendDataToParent(data);
         }
 
     }
@@ -100,22 +98,17 @@ void createProcesses(int nProcess, char *filename, char *column, char uniques[][
 }
 
 void sendViaQueue(int msgid, struct processDataStruct data) {
-    if(msgsnd(msgid, (const void *)&data, MAX_TEXT, 0600) == -1) { // msgsnd returns -1 if the message is not sent
-        printf("Msg not sent\n");
-    } else {
-        // printf("Message sent!\n");
-    }
+    msgsnd_(msgid, data, MAX_TEXT, 0600);
 }
 
-struct processDataStruct receiveViaQueue(int msgid) {
+struct processDataStruct receiveViaQueue(int msgid, char unique[20]) {
     struct processDataStruct processData;
-    long int msg_to_rec=0;
 
-    msgrcv(msgid, (void *)&processData, MAX_TEXT, 0, 0); 
+    strcpy(processData.uniqueValue, unique);
+    // printf("The unique value is: %s\n", processData.uniqueValue);
+    struct processDataStruct data = msgrcv_(msgid, unique, MAX_TEXT, 0, 0);
 
-    printf("Data received: %s\n", processData.uniqueValue);
-
-    return processData;
+    return data;
 }
 
 void sendDatToParent(struct processDataStruct data) {
